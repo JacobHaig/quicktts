@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
+    "profanityfilter>=2.1.0",
     "pytchat>=0.5.5",
     "yapper-tts>=0.7.0",
 ]
