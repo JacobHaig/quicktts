@@ -1,16 +1,50 @@
 import argparse
+import time
 
-import pytchat
 from yapper import Yapper, PiperSpeaker, PiperQuality, PiperVoiceGB
 from profanityfilter import ProfanityFilter
 
+import LiveStream_Connecter
+
+
+##################### STREAM VARIABLES #####################
+
+STREAMING_ON_TWITCH = True
+STREAMING_ON_YOUTUBE = True
+
+
+##################### TWITCH VARIABLES #####################
+# Replace this with your Twitch username. Must be all lowercase.
+TWITCH_CHANNEL = 'aaren202'
+
+
+##################### YOUTUBE VARIABLES #####################
+# If you're streaming on Youtube, replace this with your Youtube's Channel ID
+# Find this by clicking your Youtube profile pic -> Settings -> Advanced Settings
+YOUTUBE_CHANNEL_ID = "UC6nQpwfyfXZnh1gRpIsAFLQ"  # "a-aron101"
+
+# If you're using an Unlisted stream to test on Youtube, replace "None" below with your stream's URL in quotes.
+# Otherwise you can leave this as "None"
+YOUTUBE_STREAM_URL = None
+
+
+streams = []
+
+if STREAMING_ON_TWITCH:
+    t = LiveStream_Connecter.Twitch()
+    t.stream_connect(TWITCH_CHANNEL)
+    streams.append(t)
+if STREAMING_ON_YOUTUBE:
+    t = LiveStream_Connecter.YouTube()
+    t.stream_connect(YOUTUBE_CHANNEL_ID, YOUTUBE_STREAM_URL)
+    streams.append(t)
+
+
 pf = ProfanityFilter()
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--id", required=True, help="Your Video ID")
-parser.add_argument("-v", "--volume", required=False, type=float, default=0.25, help="Your Video Volume")
 
-yt_video_id = str(parser.parse_args().id)
+parser = argparse.ArgumentParser()
+parser.add_argument("-v", "--volume", required=False, type=float, default=0.25, help="The Volume level of the TTS")
 volume = float(parser.parse_args().volume)
 
 
@@ -36,24 +70,26 @@ def say(username: str, saying: str) -> None:
 
 
 def main():
-    chat = pytchat.create(video_id=yt_video_id)
-
-    if chat.is_alive():
-        print(" === Youtube Stream is connected! ===")
-    else:
-        print(" === Youtube Stream is not connected! ===")
+    if not STREAMING_ON_TWITCH and not STREAMING_ON_YOUTUBE:
+        print(" === No streams are connected! ===")
         return
 
-    while chat.is_alive() and not chat.is_replay():
-        # Check if ctrl+c is pressed
-        try:
-            for c in chat.get().sync_items():  # this is waiting for the next message. We should switch to async
-                print(f"{c.datetime} [{c.author.name}]- {c.message}")
-                say(c.author.name, c.message)
+    # Collect messages from all streams
+    message_queue = []
+    while True:
+        for stream in streams:
+            if isinstance(stream, LiveStream_Connecter.Twitch):
+                message_queue.extend(stream.receive_messages())
+            elif isinstance(stream, LiveStream_Connecter.YouTube):
+                message_queue.extend(stream.receive_messages())
 
-        except KeyboardInterrupt:
-            break
-    print(" === Youtube Stream is disconnected! ===")
+        # Print and say all the messages
+        for message in message_queue:
+            print(f"username: {message["username"]} message: {message["message"]}")
+            say(message["username"], message["message"])
+        
+        time.sleep(2)
+        message_queue.clear()
 
 
 if __name__ == '__main__':
