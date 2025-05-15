@@ -9,3 +9,14 @@ dependencies = [
     "ruff>=0.11.10",
     "yapper-tts>=0.7.0",
 ]
+
+
+[tool.ruff]
+# Same as Black.
+line-length = 180
+indent-width = 4
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+# quote-style = "double"
+# indent-style = "tab"
