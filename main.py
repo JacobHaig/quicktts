@@ -4,8 +4,19 @@ import time
 from yapper import Yapper, PiperSpeaker, PiperQuality, PiperVoiceGB
 from profanityfilter import ProfanityFilter
 
-import LiveStream_Connecter
+import livestream
 
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-v",
+    "--volume",
+    required=False,
+    type=float,
+    default=0.25,
+    help="The Volume level of the TTS",
+)
+volume = float(parser.parse_args().volume)
 
 ##################### STREAM VARIABLES #####################
 
@@ -15,7 +26,7 @@ STREAMING_ON_YOUTUBE = True
 
 ##################### TWITCH VARIABLES #####################
 # Replace this with your Twitch username. Must be all lowercase.
-TWITCH_CHANNEL = 'aaren202'
+TWITCH_CHANNEL = "aaren202"
 
 
 ##################### YOUTUBE VARIABLES #####################
@@ -31,21 +42,16 @@ YOUTUBE_STREAM_URL = None
 streams = []
 
 if STREAMING_ON_TWITCH:
-    t = LiveStream_Connecter.Twitch()
+    t = livestream.Twitch()
     t.stream_connect(TWITCH_CHANNEL)
     streams.append(t)
 if STREAMING_ON_YOUTUBE:
-    t = LiveStream_Connecter.YouTube()
+    t = livestream.YouTube()
     t.stream_connect(YOUTUBE_CHANNEL_ID, YOUTUBE_STREAM_URL)
     streams.append(t)
 
 
 pf = ProfanityFilter()
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("-v", "--volume", required=False, type=float, default=0.25, help="The Volume level of the TTS")
-volume = float(parser.parse_args().volume)
 
 
 def get_speaker(custom_volume=0.25):
@@ -69,6 +75,17 @@ def say(username: str, saying: str) -> None:
     yapper.yap(pf.censor(full_saying))
 
 
+def handle_message(message: dict) -> None:
+    """
+    Handle the incoming message from the stream.
+    This function can be extended to include more complex logic.
+    """
+    # Example: You can add more processing here if needed
+    # For now, we just print the message
+    print(f"username: {message['username']} message: {message['message']}")
+    say(message["username"], message["message"])
+
+
 def main():
     if not STREAMING_ON_TWITCH and not STREAMING_ON_YOUTUBE:
         print(" === No streams are connected! ===")
@@ -77,20 +94,17 @@ def main():
     # Collect messages from all streams
     message_queue = []
     while True:
+        # Receive messages from each stream
         for stream in streams:
-            if isinstance(stream, LiveStream_Connecter.Twitch):
-                message_queue.extend(stream.receive_messages())
-            elif isinstance(stream, LiveStream_Connecter.YouTube):
-                message_queue.extend(stream.receive_messages())
+            message_queue.extend(stream.receive_messages())
 
         # Print and say all the messages
         for message in message_queue:
-            print(f"username: {message["username"]} message: {message["message"]}")
-            say(message["username"], message["message"])
-        
-        time.sleep(2)
+            handle_message(message)
+
+        time.sleep(0.5)
         message_queue.clear()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,4 +1,4 @@
 # Commands
 pip install uv --upgrade
 uv sync
-uv run main.py --id FnJ-B_A0OPw -v 0.25
+uv run main.py -v 0.25
