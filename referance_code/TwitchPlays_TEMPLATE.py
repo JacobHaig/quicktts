@@ -3,8 +3,10 @@ import random
 import keyboard
 import pydirectinput
 import pyautogui
-import LiveStream_Connecter
+import TwitchPlays_Connection as LiveStream_Connecter
 from TwitchPlays_KeyCodes import *
+
+import time
 
 ##################### GAME VARIABLES #####################
 
